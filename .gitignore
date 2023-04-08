@@ -1,0 +1,36 @@
+# Directories
+node_modules/
+public/uploads/
+coverage/
+logs/
+dist/
+tmp/
+build/
+docs/
+.eslintcache/
+.nyc_output/
+.jest/
+
+# Files
+.env
+*.log
+*.pid
+*.swp
+*.bak
+*.tmp
+*.db
+*.sqlite
+*.sqlite3
+*.pdf
+*.zip
+*.gz
+*.tar.gz
+*.tgz
+*.tar
+*.rar
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.DS_Store
