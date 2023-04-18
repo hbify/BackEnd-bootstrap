@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   contact: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Contact',
-  },
+  }, //contact is additional model to store user information other than login related fields
   status: { 
     type: String, 
     enum: ['unverified', 'verified', 'pending'], default: 'unverified' 
