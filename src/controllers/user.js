@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 //const config = require('../config');
 const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
+const { sendVerificationLink } = require('../services/verificationService');
+
 
 exports.createUser = async (req, res, next) => {
   try {
@@ -15,9 +17,10 @@ exports.createUser = async (req, res, next) => {
     }
 
     // Create user
-    const user = new User(req.body);
+    const user = new User({ ...req.body, verificationToken: User.generateVerificationToken()});
     await user.save();
 
+    await sendVerificationLink(user);
     res.status(201).json({ message: 'User created successfully.' });
   } catch (err) {
     next(err);
@@ -83,7 +86,7 @@ exports.deleteUserById = async (req, res, next) => {
     }
   };
 
-  exports.searchUser = async (req, res, next) => {
+exports.searchUser = async (req, res, next) => {
     try {
         const users = await User.find(req.body, '-password');
         res.status(200).json(users);
@@ -166,7 +169,7 @@ exports.confirmPasswordReset = async (req, res, next) => {
 };
 
 /*
-cexports.login = async (req, res, next) => {
+exports.login = async (req, res, next) => {
   const { phone, password } = req.body;
 
   try {
@@ -237,3 +240,74 @@ exports.logout = async (req, res, next) => {
     return next(err);
   }
 };
+
+// sends verification link to users email address
+/*
+exports.sendVerificationLink = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // generate a unique verification token
+    const token = user.generateVerificationToken();
+    await user.save();
+
+    // send the verification email
+    const transporter = nodemailer.createTransport({
+      // your email service configuration
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: 'Account Verification',
+      html: `
+        <p>Hello ${user.name},</p>
+        <p>Please click the following link to verify your account:</p>
+        <a href="${process.env.BASE_URL}/api/users/verify/${token}">Verify my account</a>
+      `
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: 'Failed to send verification email' });
+      }
+
+      return res.status(200).json({ message: 'Verification email sent' });
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Failed to send verification email' });
+  }
+};
+*/
+
+// function to verify a user when the verification link is clicked
+exports.verifyUser = async (req, res) => {
+  try {
+    const token = req.params.token; // Get the verification token from the URL params
+    const user = await User.findOne({ verificationToken: token }); // Find the user with the matching verification token
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Invalid verification token' }); // Return an error response if the user is not found
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ success: false, message: 'This user has already been verified' }); // Return an error response if the user has already been verified
+    }
+
+    user.isVerified = true; // Set the user's `isVerified` flag to true
+    user.status = 'verified'; // Set the user's `status` flag to verified
+    user.verificationToken = undefined; // Remove the verification token
+    await user.save(); // Save the updated user document
+
+    return res.status(200).json({ success: true, message: 'User has been successfully verified' }); // Return a success response
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, message: 'Server error' }); // Return a server error response if an error occurs
+  }
+};
+

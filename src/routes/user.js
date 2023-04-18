@@ -33,4 +33,6 @@ router.post('/login', UserController.login);
 // Logout
 router.get('/logout', passport.authenticate('jwt', { session: false }), UserController.logout);
 
+//verify user
+router.put('/verify/:token', UserController.verifyUser);
 module.exports = router;
